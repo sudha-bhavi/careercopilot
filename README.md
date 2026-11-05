@@ -8,6 +8,11 @@ description next to your resume to see which skills match and which are missing.
 
 I built it as a portfolio project and use it in my own job search.
 
+**Live demo:** https://careercopilot-lsm4.onrender.com
+
+The demo runs on a free hosting plan, so the first load after a quiet period can take up to a minute
+while the service wakes up. It is a single-user app, so sign-in is private to the owner.
+
 ## Features
 
 - **Applications:** company, role, job link, status, applied date, follow-up date and notes
@@ -32,6 +37,7 @@ it by changing one registration line in `Program.cs`, with no endpoint or UI cha
 | Web | React 19, TypeScript, Vite |
 | Tests | xUnit with `WebApplicationFactory` and an in-memory database |
 | CI | GitHub Actions: build and test the API, type-check and build the web app |
+| Hosting | Render: one Docker image serves the API and the built web app, with managed PostgreSQL |
 
 ## Run it locally
 

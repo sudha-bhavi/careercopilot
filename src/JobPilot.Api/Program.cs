@@ -102,8 +102,10 @@ app.MapDashboardEndpoints();
 app.MapResumeEndpoints();
 
 // Any other path returns the React app so client-side routes survive a refresh.
-// /api/* is excluded, so an unknown API route is a real 404, not an HTML page.
-app.MapFallbackToFile("{*path:regex(^(?!api/).*$)}", "index.html");
+// Two exclusions: /api/* (an unknown API route must be a real 404, not an HTML page) and any
+// path containing a dot. Static-file middleware skips a request once a route has matched it,
+// so a catch-all that also matched /assets/app.js would answer with index.html instead of the file.
+app.MapFallbackToFile("{*path:regex(^(?!api/)[^.]*$)}", "index.html");
 
 app.Run();
 

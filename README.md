@@ -109,6 +109,8 @@ Everything except login and health requires `Authorization: Bearer <token>`.
   touching the endpoint or the UI.
 - **Liveness and readiness are separate.** `/health` never touches the database, so a database
   outage does not make an orchestrator restart a healthy app. `/health/ready` checks it.
+- **The app degrades gracefully when the database is down.** It still starts, login, resume match
+  and job search keep working, and data endpoints return a clear 503 message instead of crashing.
 - **Auth settings are validated on startup.** A missing secret fails the boot with a clear message
   instead of surfacing as a confusing login error later.
 - **Login is rate limited and compared in constant time**, which makes password guessing impractical.

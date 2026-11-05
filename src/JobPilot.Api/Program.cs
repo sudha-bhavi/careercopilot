@@ -1,3 +1,5 @@
+using System.Data.Common;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.RateLimiting;
 using JobPilot.Api.Auth;
@@ -92,14 +94,39 @@ var app = builder.Build();
 
 // Apply pending migrations on startup. Fine for a single-instance app; a larger system
 // would run migrations as a separate deploy step.
-using (var scope = app.Services.CreateScope())
+// If the database is unreachable the app still starts, so login, resume match and job search keep
+// working and visitors see a clear message instead of a dead site. Migrations apply on the next start.
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<JobPilotDbContext>();
     if (db.Database.IsRelational())
     {
         db.Database.Migrate();
     }
 }
+catch (Exception ex) when (IsDatabaseDown(ex))
+{
+    app.Logger.LogError(ex, "The database is unreachable at startup. Starting without it; data features will report 503.");
+}
+
+// Turns "database is down" failures into a friendly 503 for the UI instead of a bare 500.
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex) when (!context.Response.HasStarted && IsDatabaseDown(ex))
+    {
+        app.Logger.LogError(ex, "Database unavailable while handling {Path}", context.Request.Path);
+        await Results.Problem(
+            title: "Database unavailable",
+            detail: "The database behind this demo is currently unavailable. The demo runs on a free hosting tier, " +
+                    "so this is a hosting limit, not an application error. Please check back later.",
+            statusCode: StatusCodes.Status503ServiceUnavailable).ExecuteAsync(context);
+    }
+});
 
 // Serves the built React app from wwwroot (present in the Docker image, absent in dev and tests).
 app.UseDefaultFiles();
@@ -127,6 +154,16 @@ app.MapJobEndpoints();
 app.MapFallbackToFile("{*path:regex(^(?!api/)[^.]*$)}", "index.html");
 
 app.Run();
+
+// True when the exception, or anything it wraps, is a database or network connection failure.
+static bool IsDatabaseDown(Exception? ex)
+{
+    for (; ex is not null; ex = ex.InnerException)
+    {
+        if (ex is DbException or SocketException) return true;
+    }
+    return false;
+}
 
 // Hosts such as Render hand out "postgres://user:pass@host:port/db". Npgsql wants key=value pairs,
 // so convert the URL form; a connection string that is already key=value passes through unchanged.

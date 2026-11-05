@@ -14,6 +14,7 @@ import { ApplicationForm } from './components/ApplicationForm';
 import { ApplicationList } from './components/ApplicationList';
 import { Brand } from './components/Brand';
 import { DashboardCards } from './components/DashboardCards';
+import { JobSearch } from './components/JobSearch';
 import { LoginForm } from './components/LoginForm';
 import { ResumeMatch } from './components/ResumeMatch';
 import { STATUSES, type ApplicationInput, type Dashboard, type JobApplication, type Status } from './types';
@@ -37,7 +38,7 @@ export default function App() {
 }
 
 function Home({ onSignOut }: { onSignOut: () => void }) {
-  const [tab, setTab] = useState<'applications' | 'resume'>('applications');
+  const [tab, setTab] = useState<'applications' | 'jobs' | 'resume'>('applications');
   const [view, setView] = useState<'board' | 'list'>('board');
   const [items, setItems] = useState<JobApplication[]>([]);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -100,6 +101,9 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
             <button className={`tab ${tab === 'applications' ? 'active' : ''}`} onClick={() => setTab('applications')}>
               Applications
             </button>
+            <button className={`tab ${tab === 'jobs' ? 'active' : ''}`} onClick={() => setTab('jobs')}>
+              Job search
+            </button>
             <button className={`tab ${tab === 'resume' ? 'active' : ''}`} onClick={() => setTab('resume')}>
               Resume match
             </button>
@@ -112,6 +116,8 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
 
       {tab === 'resume' ? (
         <ResumeMatch />
+      ) : tab === 'jobs' ? (
+        <JobSearch onSaved={() => void load()} />
       ) : (
         <main className="stack">
           <DashboardCards data={dashboard} />

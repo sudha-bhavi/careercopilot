@@ -65,10 +65,28 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0
         }));
+
+    // Job search spends the job source's free quota, so it gets its own, looser limit.
+    options.AddPolicy("search", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
 });
 
 // --- Resume matching: swap this one line to plug in an AI-backed matcher later ---
 builder.Services.AddSingleton<IResumeMatcher, KeywordResumeMatcher>();
+
+// --- Job search: Adzuna's official API. Optional config; see AdzunaOptions ---
+builder.Services.AddOptions<AdzunaOptions>().BindConfiguration("Adzuna");
+builder.Services.AddHttpClient<IJobSearchProvider, AdzunaJobProvider>(client =>
+{
+    client.BaseAddress = new Uri("https://api.adzuna.com/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 var app = builder.Build();
 
@@ -100,6 +118,7 @@ app.MapAuthEndpoints();
 app.MapApplicationEndpoints();
 app.MapDashboardEndpoints();
 app.MapResumeEndpoints();
+app.MapJobEndpoints();
 
 // Any other path returns the React app so client-side routes survive a refresh.
 // Two exclusions: /api/* (an unknown API route must be a real 404, not an HTML page) and any

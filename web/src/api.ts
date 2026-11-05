@@ -1,4 +1,4 @@
-import type { ApplicationInput, Dashboard, JobApplication, MatchResult, Status } from './types';
+import type { ApplicationInput, Dashboard, JobApplication, JobMatch, MatchResult, Status } from './types';
 
 const TOKEN_KEY = 'jobpilot.token';
 
@@ -16,6 +16,7 @@ async function readError(res: Response): Promise<string> {
   try {
     const body = await res.json();
     if (body?.errors) return Object.values(body.errors as Record<string, string[]>).flat().join(' ');
+    if (body?.detail) return body.detail as string;
     if (body?.title) return body.title as string;
   } catch {
     // body was not JSON; fall through to the generic message
@@ -72,7 +73,13 @@ export const deleteApplication = (id: string) =>
 
 export const getDashboard = () => request<Dashboard>('/api/dashboard');
 
-export const matchResume = (resumeText: string, jobDescription: string) =>
+export const searchJobs = (city: string, query: string, resumeText: string) =>
+  request<JobMatch[]>('/api/jobs/search', {
+    method: 'POST',
+    body: JSON.stringify({ city, query: query || null, resumeText }),
+  });
+
+export const matchResume =(resumeText: string, jobDescription: string) =>
   request<MatchResult>('/api/resume/match', {
     method: 'POST',
     body: JSON.stringify({ resumeText, jobDescription }),

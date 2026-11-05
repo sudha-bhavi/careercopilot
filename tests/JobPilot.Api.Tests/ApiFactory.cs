@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using JobPilot.Api.Contracts;
 using JobPilot.Api.Data;
+using JobPilot.Api.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,9 @@ public class ApiFactory : WebApplicationFactory<Program>
 
             // ...and use an in-memory database instead.
             services.AddDbContext<JobPilotDbContext>(o => o.UseInMemoryDatabase(_databaseName));
+
+            // Never call the real job source from tests. The last registration wins.
+            services.AddSingleton<IJobSearchProvider>(new FakeJobSearchProvider());
         });
     }
 

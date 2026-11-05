@@ -30,6 +30,24 @@ export interface Dashboard {
   followUpsDue: number;
 }
 
+export interface JobListing {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  url: string;
+  salary: string | null;
+  postedAt: string | null;
+}
+
+export interface JobMatch {
+  job: JobListing;
+  score: number;
+  matched: string[];
+  missing: string[];
+}
+
 export interface MatchResult {
   score: number;
   matched: string[];

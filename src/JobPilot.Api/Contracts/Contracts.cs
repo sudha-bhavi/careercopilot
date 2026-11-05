@@ -37,3 +37,17 @@ public record LoginResponse(string Token);
 public record ResumeMatchRequest(string? ResumeText, string? JobDescription);
 
 public record ResumeMatchResult(int Score, IReadOnlyList<string> Matched, IReadOnlyList<string> Missing);
+
+public record JobSearchRequest(string? City, string? Query, string? ResumeText);
+
+public record JobListing(
+    string Id,
+    string Title,
+    string Company,
+    string Location,
+    string Description,
+    string Url,
+    string? Salary,
+    DateTimeOffset? PostedAt);
+
+public record JobMatch(JobListing Job, int Score, IReadOnlyList<string> Matched, IReadOnlyList<string> Missing);

@@ -20,6 +20,8 @@ while the service wakes up. It is a single-user app, so sign-in is private to th
 - **Follow-up reminders:** applications still in play (Applied, Interview) whose follow-up date has
   arrived are highlighted
 - **Resume match:** matched skills, missing skills and a score from a pasted resume and job description
+- **Job search:** search open jobs by city through Adzuna's API, ranked by how well each fits your
+  resume, with one-click "Save to tracker"
 - **Sign-in:** single-user login with a JWT
 
 ## Resume matching and AI
@@ -71,6 +73,16 @@ You need the .NET 10 SDK, Docker and Node 22.
    cd web && npm install && npm run dev
    ```
 
+Job search is optional. Create a free key at https://developer.adzuna.com and set both values
+(locally with user-secrets; in production as `Adzuna__AppId` and `Adzuna__AppKey`):
+
+```bash
+dotnet user-secrets set "Adzuna:AppId" "<your-adzuna-app-id>" --project src/JobPilot.Api
+dotnet user-secrets set "Adzuna:AppKey" "<your-adzuna-app-key>" --project src/JobPilot.Api
+```
+
+Without them the rest of the app works and the Job search tab reports that it is not configured.
+
 Run the tests with `dotnet test`. They need no database and no secrets.
 
 ## API
@@ -86,6 +98,7 @@ Run the tests with `dotnet test`. They need no database and no secrets.
 | `DELETE /api/applications/{id}` | Delete |
 | `GET /api/dashboard` | Counts per status and follow-ups due |
 | `POST /api/resume/match` | Match a resume against a job description |
+| `POST /api/jobs/search` | Find open jobs in a city and rank them against a resume |
 | `GET /health`, `GET /health/ready` | Liveness and readiness |
 
 Everything except login and health requires `Authorization: Bearer <token>`.

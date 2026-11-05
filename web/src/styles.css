@@ -310,6 +310,12 @@ button.small-btn { padding: 4px 10px; font-size: 0.85rem; }
 .chip.ok { background: var(--ok-bg); color: var(--ok-text); }
 .chip.bad { background: var(--bad-bg); color: var(--bad-text); }
 
+/* ---------- job search ---------- */
+.match-strong { --c: #10b981; }
+.match-partial { --c: #f59e0b; }
+.match-weak { --c: #ef4444; }
+.card-actions a { margin-right: auto; }
+
 @media (max-width: 640px) {
   .shell { padding: 12px 12px 40px; }
   .board { grid-template-columns: repeat(5, 240px); }

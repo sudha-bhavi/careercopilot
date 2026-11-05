@@ -1,0 +1,31 @@
+# Render Blueprint: creates the web service (built from the Dockerfile) and its Postgres database.
+databases:
+  - name: careercopilot-db
+    plan: free
+    databaseName: careercopilot
+    user: careercopilot
+
+services:
+  - type: web
+    name: careercopilot
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ConnectionStrings__JobPilot
+        fromDatabase:
+          name: careercopilot-db
+          property: connectionString
+      # Asked for in the Render dashboard on first deploy, so they never live in git.
+      - key: Auth__Username
+        sync: false
+      - key: Auth__Password
+        sync: false
+      # Render generates a random 256-bit value.
+      - key: Auth__JwtKey
+        generateValue: true
+      # Behind Render's proxy, so the real client address is used for login rate limiting.
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: PORT
+        value: "8080"

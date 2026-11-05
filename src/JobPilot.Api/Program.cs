@@ -10,12 +10,13 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Database ---
 builder.Services.AddDbContext<JobPilotDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("JobPilot")));
+    options.UseNpgsql(ToNpgsqlConnectionString(builder.Configuration.GetConnectionString("JobPilot"))));
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<JobPilotDbContext>("database", tags: ["ready"]);
@@ -82,6 +83,10 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Serves the built React app from wwwroot (present in the Docker image, absent in dev and tests).
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -96,7 +101,31 @@ app.MapApplicationEndpoints();
 app.MapDashboardEndpoints();
 app.MapResumeEndpoints();
 
+// Any other path returns the React app so client-side routes survive a refresh.
+// /api/* is excluded, so an unknown API route is a real 404, not an HTML page.
+app.MapFallbackToFile("{*path:regex(^(?!api/).*$)}", "index.html");
+
 app.Run();
+
+// Hosts such as Render hand out "postgres://user:pass@host:port/db". Npgsql wants key=value pairs,
+// so convert the URL form; a connection string that is already key=value passes through unchanged.
+static string ToNpgsqlConnectionString(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value)) return "";
+    if (!value.StartsWith("postgres://") && !value.StartsWith("postgresql://")) return value;
+
+    var uri = new Uri(value);
+    var credentials = uri.UserInfo.Split(':', 2);
+    return new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Database = uri.AbsolutePath.TrimStart('/'),
+        Username = Uri.UnescapeDataString(credentials[0]),
+        Password = credentials.Length > 1 ? Uri.UnescapeDataString(credentials[1]) : null,
+        SslMode = SslMode.Prefer // encrypted when the server supports it, as on Render's external URL
+    }.ConnectionString;
+}
 
 // Top-level statements generate an internal Program class. Making it public lets the
 // test project use WebApplicationFactory<Program>.

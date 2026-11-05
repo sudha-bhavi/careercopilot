@@ -1,6 +1,8 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { matchResume } from '../api';
 import type { MatchResult } from '../types';
+
+const ringColor = (score: number) => (score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444');
 
 export function ResumeMatch() {
   const [resume, setResume] = useState('');
@@ -23,6 +25,10 @@ export function ResumeMatch() {
     }
   }
 
+  const ringStyle = result
+    ? ({ '--pct': result.score, '--ring': ringColor(result.score) } as CSSProperties)
+    : undefined;
+
   return (
     <section className="stack">
       <form onSubmit={submit} className="card stack">
@@ -42,14 +48,24 @@ export function ResumeMatch() {
           </label>
         </div>
         {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={busy}>{busy ? 'Matching…' : 'Check match'}</button>
+        <div>
+          <button type="submit" disabled={busy}>{busy ? 'Matching…' : 'Check match'}</button>
+        </div>
       </form>
 
       {result && (
         <div className="card stack" aria-live="polite">
-          <p className="score">
-            {result.score}% <span className="muted">match</span>
-          </p>
+          <div className="score-row">
+            <div className="ring" style={ringStyle} role="img" aria-label={`${result.score} percent match`}>
+              <div className="ring-inner">{result.score}%</div>
+            </div>
+            <div>
+              <h2>{result.score >= 70 ? 'Strong match' : result.score >= 40 ? 'Partial match' : 'Weak match'}</h2>
+              <p className="muted">
+                {result.matched.length} of {result.matched.length + result.missing.length} skills found in your resume
+              </p>
+            </div>
+          </div>
           {result.matched.length + result.missing.length === 0 && (
             <p className="muted">No known skills were found in this job description.</p>
           )}

@@ -9,8 +9,10 @@ import {
   setUnauthorizedHandler,
   updateApplication,
 } from './api';
+import { ApplicationBoard } from './components/ApplicationBoard';
 import { ApplicationForm } from './components/ApplicationForm';
 import { ApplicationList } from './components/ApplicationList';
+import { Brand } from './components/Brand';
 import { DashboardCards } from './components/DashboardCards';
 import { LoginForm } from './components/LoginForm';
 import { ResumeMatch } from './components/ResumeMatch';
@@ -36,22 +38,26 @@ export default function App() {
 
 function Home({ onSignOut }: { onSignOut: () => void }) {
   const [tab, setTab] = useState<'applications' | 'resume'>('applications');
+  const [view, setView] = useState<'board' | 'list'>('board');
   const [items, setItems] = useState<JobApplication[]>([]);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [filter, setFilter] = useState<Status | ''>('');
   const [editing, setEditing] = useState<JobApplication | 'new' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The board already shows every status as a column, so the status filter only applies to the list.
+  const activeFilter = view === 'list' ? filter : '';
+
   const load = useCallback(async () => {
     try {
-      const [list, summary] = await Promise.all([listApplications(filter || undefined), getDashboard()]);
+      const [list, summary] = await Promise.all([listApplications(activeFilter || undefined), getDashboard()]);
       setItems(list);
       setDashboard(summary);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load data.');
     }
-  }, [filter]);
+  }, [activeFilter]);
 
   useEffect(() => {
     void load();
@@ -83,19 +89,23 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
     }
   }
 
+  const actions = { onEdit: setEditing, onDelete: remove, onStatusChange: changeStatus };
+
   return (
     <div className="shell">
       <header className="topbar">
-        <h1>JobPilot</h1>
-        <nav className="row">
-          <button className={tab === 'applications' ? '' : 'secondary'} onClick={() => setTab('applications')}>
-            Applications
-          </button>
-          <button className={tab === 'resume' ? '' : 'secondary'} onClick={() => setTab('resume')}>
-            Resume match
-          </button>
+        <Brand />
+        <div className="row">
+          <nav className="tabs" aria-label="Sections">
+            <button className={`tab ${tab === 'applications' ? 'active' : ''}`} onClick={() => setTab('applications')}>
+              Applications
+            </button>
+            <button className={`tab ${tab === 'resume' ? 'active' : ''}`} onClick={() => setTab('resume')}>
+              Resume match
+            </button>
+          </nav>
           <button className="secondary" onClick={onSignOut}>Sign out</button>
-        </nav>
+        </div>
       </header>
 
       {error && <p className="error" role="alert">{error}</p>}
@@ -114,25 +124,36 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
             />
           ) : (
             <div className="row between">
-              <label className="inline">
-                Show
-                <select value={filter} onChange={(e) => setFilter(e.target.value as Status | '')}>
-                  <option value="">All</option>
-                  {STATUSES.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </label>
-              <button onClick={() => setEditing('new')}>Add application</button>
+              <div className="row">
+                <nav className="tabs" aria-label="View">
+                  <button className={`tab ${view === 'board' ? 'active' : ''}`} onClick={() => setView('board')}>
+                    Board
+                  </button>
+                  <button className={`tab ${view === 'list' ? 'active' : ''}`} onClick={() => setView('list')}>
+                    List
+                  </button>
+                </nav>
+                {view === 'list' && (
+                  <label className="inline">
+                    Show
+                    <select value={filter} onChange={(e) => setFilter(e.target.value as Status | '')}>
+                      <option value="">All</option>
+                      {STATUSES.map((s) => (
+                        <option key={s}>{s}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+              <button onClick={() => setEditing('new')}>+ Add application</button>
             </div>
           )}
 
-          <ApplicationList
-            items={items}
-            onEdit={setEditing}
-            onDelete={remove}
-            onStatusChange={changeStatus}
-          />
+          {view === 'board' ? (
+            <ApplicationBoard items={items} {...actions} />
+          ) : (
+            <ApplicationList items={items} {...actions} />
+          )}
         </main>
       )}
     </div>

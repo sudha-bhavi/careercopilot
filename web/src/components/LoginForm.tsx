@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { login } from '../api';
+import { Brand } from './Brand';
 
 export function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [username, setUsername] = useState('');
@@ -23,8 +24,8 @@ export function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
 
   return (
     <main className="login">
-      <h1>JobPilot</h1>
-      <p className="muted">Sign in to track your applications.</p>
+      <Brand />
+      <p className="muted tagline">Track every application. Never miss a follow-up.</p>
       <form onSubmit={submit} className="card stack">
         <label>
           Username
